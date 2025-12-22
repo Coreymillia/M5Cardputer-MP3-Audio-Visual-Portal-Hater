@@ -1,0 +1,41 @@
+{
+  "name": "XtraCardputer v2.0",
+  "description": "Ultimate M5Cardputer Firmware - Multi-tool with Screensavers, Games, WiFi Tools, Audio Player, and more!",
+  "version": "2.0.0",
+  "author": "Corey Millia",
+  "category": "Utility",
+  "board": "M5Cardputer",
+  "chip": "ESP32S3",
+  "target": "m5stack-cardputer",
+  "features": [
+    "30+ Screensaver Effects",
+    "Tetris Game (Portrait Mode)",
+    "Tetroids (Asteroids Game)", 
+    "Calculator with Visual Design",
+    "Advanced WiFi Scanner",
+    "Matrix Portal (AP Message System)",
+    "Spamtastic Beacon Generator",
+    "Custom Portal Hater",
+    "MP3 Player with Shuffle",
+    "Digital Clock with Visual Alarm",
+    "Dad Jokes Generator",
+    "IR Remote Control"
+  ],
+  "website": "https://github.com/Coreymillia/XtraCardPuter",
+  "requires": [
+    "SD Card (for MP3 files)"
+  ],
+  "flash": {
+    "baudrate": 921600,
+    "chip": "esp32s3",
+    "size": "8MB",
+    "mode": "dio",
+    "frequency": "80m"
+  },
+  "binaries": [
+    {
+      "path": "XtraCardputer_M5Cardputer-v2.0-MERGED.bin",
+      "offset": "0x0"
+    }
+  ]
+}
