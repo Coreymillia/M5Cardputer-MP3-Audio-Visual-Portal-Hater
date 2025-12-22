@@ -7,14 +7,14 @@ XtraCardputer transforms your M5Cardputer into a full-featured pocket computer w
 
 ### 🎯 Core System
 - **Boot to Screensaver**: Powers on to the beautiful 28-effect screensaver
-- **ESC Menu Access**: Press ESC at any time to access the main menu
+- **Menu Access**: Press FnM at any time to access the main menu
 - **Auto-Return**: Menu automatically returns to screensaver after 1 minute of inactivity
 
 ### 📱 Applications
 
 1. **🎨 Screensaver** 
    - Multiple visual effects (subset of original 341 collection optimized for multi-app environment)
-   - Cycles through effects automatically
+   - Cycles through effects automatically - toggle off and on  using spacebar while screensaver is running. 
    - Manual effect switching with keyboard
 
 2. **🎵 MP3 Player**
@@ -61,13 +61,18 @@ XtraCardputer transforms your M5Cardputer into a full-featured pocket computer w
    - Category-based beacon selection
    - Real-time beacon transmission
 
-9. **🛡️ Evil Portal Hater**
+9. **🛡️ Evil Portal Hater** 2 Modes Pre Set OR Custom
    - Monitor and detect captive portals
    - Custom message broadcasting
    - Send counter-messages
    - User-configurable messages
    - One preset message option
 
+ **PLUS**
+ 10. Deauth hunter
+ 11. PinAp hunter
+ 12. 3,541 Joke Scroller
+ 
 ## Hardware Requirements
 - M5Cardputer with ESP32-S3
 - SD card (for music and file storage)
