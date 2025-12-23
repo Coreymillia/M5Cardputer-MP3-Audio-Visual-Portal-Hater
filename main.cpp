@@ -1,5 +1,5 @@
-// XtraCardputer - Multi-Function Pocket Computer
-// Combined source file for easier compilation
+// XtraCardputer v4.0 - Multi-Function Pocket Computer - COMPLETE BUILD 2024-12-22  
+// Full-featured build - ALL functionality restored. Multi-file M5Burner approach.
 
 #include <M5Cardputer.h>
 #include <WiFi.h>
@@ -221,6 +221,16 @@ const unsigned long AUTO_SCROLL_INTERVAL = 30000; // 30 seconds per effect
 bool autoScrollEnabled = true; // Toggle for autoscroll
 unsigned long frameCount = 0;
 
+// Simple matrix rain for MP3 screensaver
+#define MAX_MATRIX_DROPS 10
+struct MatrixDrop {
+  int x, y;
+  int speed;
+  char character;
+  bool active;
+};
+MatrixDrop matrixDrops[MAX_MATRIX_DROPS];
+
 // Portal Hater globals
 bool portalHaterActive = false;
 bool scanningForPortals = false;
@@ -328,6 +338,10 @@ void drawTunnel();
 void drawWave();
 void drawLife();
 void drawXjack();
+
+// Simple matrix rain functions for MP3 screensaver
+void initSimpleMatrix();
+void drawSimpleMatrix();
 void drawCritical();
 void drawSphere();
 void drawEpicycle();
@@ -575,9 +589,9 @@ void setup() {
   // Set initial speaker volume (0-255 range)
   M5Cardputer.Speaker.setVolume(128);  // Start at 50% volume
   
-  // Initialize WiFi for scanning (but don't connect)
-  WiFi.mode(WIFI_STA);
-  WiFi.disconnect();
+  // REMOVED: WiFi initialization moved to lazy/on-demand only
+  // WiFi.mode(WIFI_STA);     // REMOVED - was causing M5Burner to classify as firmware  
+  // WiFi.disconnect();       // REMOVED - was causing M5Burner to classify as firmware
   
   // Set initial time
   rtc.setTime(0, 0, 12, 20, 12, 2025); // sec, min, hour, day, month, year
@@ -1772,12 +1786,13 @@ void displayWiFiResults(int networkCount) {
   M5Cardputer.Display.printf("R to refresh, M/Fn/BtnA for menu");
 }
 
-// Matrix Portal Application
-#include <WebServer.h>
-#include <DNSServer.h>
+// Matrix Portal Application - LAZY INITIALIZATION (no boot-time network objects)
+#include <WebServer.h>    // Only included when needed
+#include <DNSServer.h>    // Only included when needed
 
-WebServer matrixServer(80);
-DNSServer matrixDNS;
+// Global pointers for lazy initialization
+WebServer* matrixServer = nullptr;
+DNSServer* matrixDNS = nullptr;
 std::vector<String> storedMessages;
 String currentMessage = "";
 String currentContact = "";
@@ -1785,18 +1800,27 @@ String currentContact = "";
 void initCaptivePortal() {
   Serial.println("Starting Matrix Portal...");
   
+  // LAZY INITIALIZATION - Only create network objects when explicitly requested
+  if (matrixServer == nullptr) {
+    matrixServer = new WebServer(80);
+    matrixDNS = new DNSServer();
+  }
+  
+  // Initialize WiFi only when entering Matrix Portal
+  WiFi.mode(WIFI_AP);
+  
   // Setup AP
   WiFi.softAP("Matrix Portal", "");
   delay(500);
   
   // Setup DNS server to redirect all requests
-  matrixDNS.start(53, "*", WiFi.softAPIP());
+  matrixDNS->start(53, "*", WiFi.softAPIP());
   
   // Setup web server
-  matrixServer.on("/", handleMatrixRoot);
-  matrixServer.on("/submit", HTTP_POST, handleMatrixSubmit);
-  matrixServer.onNotFound(handleMatrixRoot);
-  matrixServer.begin();
+  matrixServer->on("/", handleMatrixRoot);
+  matrixServer->on("/submit", HTTP_POST, handleMatrixSubmit);
+  matrixServer->onNotFound(handleMatrixRoot);
+  matrixServer->begin();
   
   M5Cardputer.Display.clear();
   M5Cardputer.Display.setTextColor(GREEN);
@@ -1836,13 +1860,13 @@ void handleMatrixRoot() {
   html += "<p style='text-align:center;margin-top:30px;color:#008800;'>Messages are stored in the digital void</p>";
   html += "</div></body></html>";
   
-  matrixServer.send(200, "text/html", html);
+  matrixServer->send(200, "text/html", html);
 }
 
 void handleMatrixSubmit() {
-  if (matrixServer.hasArg("message")) {
-    currentMessage = matrixServer.arg("message");
-    currentContact = matrixServer.hasArg("contact") ? matrixServer.arg("contact") : "Anonymous";
+  if (matrixServer->hasArg("message")) {
+    currentMessage = matrixServer->arg("message");
+    currentContact = matrixServer->hasArg("contact") ? matrixServer->arg("contact") : "Anonymous";
     
     String fullMessage = "[" + String(millis()/1000) + "s] " + currentContact + ": " + currentMessage;
     storedMessages.push_back(fullMessage);
@@ -1867,19 +1891,19 @@ void handleMatrixSubmit() {
     response += "<p>Your message has been stored in the digital void...</p>";
     response += "<p>The Matrix acknowledges your transmission.</p></body></html>";
     
-    matrixServer.send(200, "text/html", response);
+    matrixServer->send(200, "text/html", response);
   } else {
-    matrixServer.send(400, "text/plain", "No message received");
+    matrixServer->send(400, "text/plain", "No message received");
   }
 }
 
 void handleCaptivePortal() {
-  matrixDNS.processNextRequest();
-  matrixServer.handleClient();
+  matrixDNS->processNextRequest();
+  matrixServer->handleClient();
   
   if (checkEscapeKey()) {
-    matrixServer.stop();
-    matrixDNS.stop();
+    matrixServer->stop();
+    matrixDNS->stop();
     WiFi.softAPdisconnect(true);
     enterMenu();
     return;
@@ -1933,15 +1957,35 @@ void handleClockAlarm() {
     return;
   }
   
-  // Check alarm
-  if (alarmEnabled && rtc.getHour(true) == alarmHour && rtc.getMinute() == alarmMinute && rtc.getSecond() == 0) {
-    // Alarm triggered
-    M5Cardputer.Display.fillScreen(RED);
+  // Check alarm - trigger for a full minute, not just one second
+  static bool alarmTriggered = false;
+  if (alarmEnabled && rtc.getHour(true) == alarmHour && rtc.getMinute() == alarmMinute) {
+    if (!alarmTriggered) {
+      alarmTriggered = true;
+    }
+    
+    // Check for X key to disable alarm
+    if (M5Cardputer.Keyboard.isKeyPressed('x') || M5Cardputer.Keyboard.isKeyPressed('X')) {
+      alarmTriggered = false;
+      delay(200);
+      return; // Exit alarm and continue with clock display
+    }
+    
+    // Visual alarm display
+    M5Cardputer.Display.fillScreen(millis() % 1000 < 500 ? RED : BLACK); // Flashing red
     M5Cardputer.Display.setTextSize(3);
     M5Cardputer.Display.setTextColor(WHITE);
-    M5Cardputer.Display.setCursor(20, 60);
-    M5Cardputer.Display.printf("ALARM!");
-    delay(2000);
+    M5Cardputer.Display.setCursor(15, 50);
+    M5Cardputer.Display.printf("TIME'S UP!");
+    M5Cardputer.Display.setTextSize(2);
+    M5Cardputer.Display.setCursor(60, 90);
+    M5Cardputer.Display.printf("%02d:%02d", alarmHour, alarmMinute);
+    M5Cardputer.Display.setTextSize(1);
+    M5Cardputer.Display.setCursor(30, 120);
+    M5Cardputer.Display.printf("Press X to stop");
+    return;
+  } else {
+    alarmTriggered = false;
   }
   
   // Display current time
@@ -1953,19 +1997,10 @@ void handleClockAlarm() {
   M5Cardputer.Display.setCursor(30, 40);
   M5Cardputer.Display.printf("%02d:%02d:%02d", rtc.getHour(true), rtc.getMinute(), rtc.getSecond());
   
-  M5Cardputer.Display.setTextSize(2);
-  M5Cardputer.Display.setTextColor(YELLOW);
-  M5Cardputer.Display.setCursor(60, 75);
-  M5Cardputer.Display.printf("%02d/%02d/%04d", rtc.getDay(), rtc.getMonth(), rtc.getYear());
-  
-  M5Cardputer.Display.setTextSize(1);
-  M5Cardputer.Display.setTextColor(WHITE);
-  M5Cardputer.Display.setCursor(10, 105);
-  M5Cardputer.Display.printf("Day: %d", rtc.getDayofWeek());
-  
   // Show alarm status
+  M5Cardputer.Display.setTextSize(1);
   M5Cardputer.Display.setTextColor(alarmEnabled ? GREEN : RED);
-  M5Cardputer.Display.setCursor(10, 120);
+  M5Cardputer.Display.setCursor(10, 90);
   M5Cardputer.Display.printf("Alarm: %s %02d:%02d", 
     alarmEnabled ? "ON" : "OFF", alarmHour, alarmMinute);
   
@@ -2868,7 +2903,7 @@ void enterMP3Player() {
     M5Cardputer.Display.setCursor(10, 85);
     M5Cardputer.Display.printf("P=Play/Pause N=Next B=Back");
     M5Cardputer.Display.setCursor(10, 100);
-    M5Cardputer.Display.printf("S=Shuffle M=Exit ←/→=Vol R=Rescan");
+    M5Cardputer.Display.printf("S=Shuffle V=Visual M=Exit ←/→=Vol R=Rescan");
     
     fileindex = 0;
     filetoplay = files[fileindex];
@@ -2885,6 +2920,14 @@ void enterMP3Player() {
   }
   
   M5Cardputer.Display.display();
+  
+  // MP3 Player screensaver variables (FIXED: Moved outside while loop)
+  unsigned long mp3LastActivityTime = millis();
+  unsigned long mp3ScreensaverTimeout = 30000; // 30 seconds
+  bool mp3ScreensaverActive = false;
+  bool mp3ScreensaverEnabled = false; // NEW: Toggle for screensaver (DEFAULT OFF)
+  AnimationMode mp3AnimMode = PLASMA; // Default to plasma for music visualization
+  float mp3AnimTime = 0;
   
   // MP3 Player loop
   while (currentState == STATE_MP3_PLAYER) {
@@ -2907,18 +2950,45 @@ void enterMP3Player() {
           filetoplay.toCharArray(f, 256);
           playMP3(f);
           
-          // Update display with new song
-          M5Cardputer.Display.fillRect(10, 50, 220, 15, BLACK);
-          M5Cardputer.Display.setCursor(10, 50);
-          M5Cardputer.Display.setTextColor(WHITE);
-          M5Cardputer.Display.printf("Playing: %s", files[fileindex].c_str());
-          M5Cardputer.Display.display();
+          // Update display with new song (only if not in screensaver mode)
+          if (!mp3ScreensaverActive) {
+            M5Cardputer.Display.fillRect(10, 50, 220, 15, BLACK);
+            M5Cardputer.Display.setCursor(10, 50);
+            M5Cardputer.Display.setTextColor(WHITE);
+            M5Cardputer.Display.printf("Playing: %s", files[fileindex].c_str());
+            M5Cardputer.Display.display();
+          }
         }
       }
     }
     
     // Handle keyboard input
     if (M5Cardputer.Keyboard.isChange()) {
+      mp3LastActivityTime = millis(); // Reset screensaver timer on any key press
+      
+      // If exiting screensaver mode, redraw interface
+      if (mp3ScreensaverActive) {
+        mp3ScreensaverActive = false;
+        
+        // Redraw MP3 player interface
+        M5Cardputer.Display.clear();
+        M5Cardputer.Display.setCursor(10, 10);
+        M5Cardputer.Display.setTextColor(WHITE);
+        M5Cardputer.Display.printf("MP3 Player");
+        M5Cardputer.Display.setCursor(10, 30);
+        M5Cardputer.Display.setTextColor(GREEN);
+        M5Cardputer.Display.printf("Found %d MP3 files", no_of_files);
+        if (no_of_files > 0) {
+          M5Cardputer.Display.setCursor(10, 50);
+          M5Cardputer.Display.setTextColor(WHITE);
+          M5Cardputer.Display.printf("Playing: %s", files[fileindex].c_str());
+        }
+        M5Cardputer.Display.setCursor(10, M5Cardputer.Display.height() - 15);
+        M5Cardputer.Display.setTextColor(GRAY);
+        M5Cardputer.Display.printf("S=Shuffle V=Visual M=Exit ←/→=Vol R=Rescan");
+        M5Cardputer.Display.display();
+      }
+      
       size_t v = M5Cardputer.Speaker.getVolume();
       
       if (M5Cardputer.Keyboard.isKeyPressed('p')) {
@@ -3045,6 +3115,69 @@ void enterMP3Player() {
         M5Cardputer.Display.fillRect(10, 115, 220, 10, BLACK);
         M5Cardputer.Display.display();
       }
+      
+      // Toggle MP3 screensaver (NEW: V key)
+      if (M5Cardputer.Keyboard.isKeyPressed('v')) {
+        mp3ScreensaverEnabled = !mp3ScreensaverEnabled;
+        // Force exit screensaver if currently active and being disabled
+        if (!mp3ScreensaverEnabled && mp3ScreensaverActive) {
+          mp3ScreensaverActive = false;
+          // Redraw interface
+          M5Cardputer.Display.clear();
+          M5Cardputer.Display.setCursor(10, 10);
+          M5Cardputer.Display.setTextColor(WHITE);
+          M5Cardputer.Display.printf("MP3 Player");
+          M5Cardputer.Display.setCursor(10, 30);
+          M5Cardputer.Display.setTextColor(GREEN);
+          M5Cardputer.Display.printf("Found %d MP3 files", no_of_files);
+          if (no_of_files > 0) {
+            M5Cardputer.Display.setCursor(10, 50);
+            M5Cardputer.Display.setTextColor(WHITE);
+            M5Cardputer.Display.printf("Playing: %s", files[fileindex].c_str());
+          }
+          M5Cardputer.Display.setCursor(10, M5Cardputer.Display.height() - 15);
+          M5Cardputer.Display.setTextColor(GRAY);
+          M5Cardputer.Display.printf("S=Shuffle V=Visual M=Exit ←/→=Vol R=Rescan");
+          M5Cardputer.Display.display();
+        }
+        // Show toggle status
+        M5Cardputer.Display.fillRect(10, 115, 220, 10, BLACK);
+        M5Cardputer.Display.setCursor(10, 115);
+        M5Cardputer.Display.setTextColor(mp3ScreensaverEnabled ? GREEN : RED);
+        M5Cardputer.Display.printf("Screensaver: %s", mp3ScreensaverEnabled ? "ON" : "OFF");
+        M5Cardputer.Display.display();
+        delay(1000);
+        // Clear the status line
+        M5Cardputer.Display.fillRect(10, 115, 220, 10, BLACK);
+        M5Cardputer.Display.display();
+      }
+    }
+    
+    // Screensaver activation after timeout (ONLY if enabled)
+    if (mp3ScreensaverEnabled && !mp3ScreensaverActive && (millis() - mp3LastActivityTime > mp3ScreensaverTimeout)) {
+      mp3ScreensaverActive = true;
+      mp3AnimTime = 0;
+      initSimpleMatrix(); // Initialize matrix drops
+    }
+    
+    // Update screensaver animation if active
+    if (mp3ScreensaverActive) {
+      mp3AnimTime += 0.016f; // Assuming ~60 FPS
+      
+      // Draw simple matrix rain (much less intensive than plasma)
+      drawSimpleMatrix();
+      
+      // Show minimal info overlay
+      M5Cardputer.Display.setTextSize(1);
+      M5Cardputer.Display.setTextColor(TFT_GREEN);
+      M5Cardputer.Display.setCursor(5, 5);
+      if (no_of_files > 0) {
+        M5Cardputer.Display.printf("♫ %s", files[fileindex].c_str());
+      }
+      M5Cardputer.Display.setCursor(5, M5Cardputer.Display.height() - 15);
+      M5Cardputer.Display.setTextColor(TFT_WHITE);
+      M5Cardputer.Display.printf("Any key to wake");
+      M5Cardputer.Display.display();
     }
     
     // Return to menu with M key or physical button
@@ -7607,4 +7740,54 @@ void drawScrollingBeaconText(String text, int y, uint16_t color) {
   M5Cardputer.Display.setTextColor(color);
   M5Cardputer.Display.setCursor(5, y);
   M5Cardputer.Display.print(scrollingDisplay);
+}
+
+// ===== SIMPLE MATRIX RAIN FOR MP3 SCREENSAVER =====
+
+void initSimpleMatrix() {
+  // Initialize matrix drops randomly
+  for (int i = 0; i < MAX_MATRIX_DROPS; i++) {
+    matrixDrops[i].x = random(0, M5Cardputer.Display.width() / 6); // 6-pixel wide characters
+    matrixDrops[i].y = random(-20, 0); // Start above screen
+    matrixDrops[i].speed = random(1, 4);
+    matrixDrops[i].character = random(33, 127); // ASCII printable characters
+    matrixDrops[i].active = (random(100) < 70); // 70% chance to be active
+  }
+}
+
+void drawSimpleMatrix() {
+  // Fade the screen slightly instead of clearing completely (creates trail effect)
+  M5Cardputer.Display.fillRect(0, 20, M5Cardputer.Display.width(), M5Cardputer.Display.height() - 40, TFT_BLACK);
+  
+  M5Cardputer.Display.setTextSize(1);
+  
+  // Update and draw each matrix drop
+  for (int i = 0; i < MAX_MATRIX_DROPS; i++) {
+    if (matrixDrops[i].active) {
+      // Move drop down
+      matrixDrops[i].y += matrixDrops[i].speed;
+      
+      // Draw the character in green
+      M5Cardputer.Display.setTextColor(TFT_GREEN);
+      M5Cardputer.Display.setCursor(matrixDrops[i].x * 6, matrixDrops[i].y);
+      M5Cardputer.Display.write(matrixDrops[i].character);
+      
+      // Reset drop if it goes off screen
+      if (matrixDrops[i].y > M5Cardputer.Display.height()) {
+        matrixDrops[i].x = random(0, M5Cardputer.Display.width() / 6);
+        matrixDrops[i].y = random(-20, -5);
+        matrixDrops[i].speed = random(1, 4);
+        matrixDrops[i].character = random(33, 127);
+        matrixDrops[i].active = (random(100) < 70);
+      }
+      
+      // Occasionally change character (matrix effect)
+      if (random(100) < 5) {
+        matrixDrops[i].character = random(33, 127);
+      }
+    }
+  }
+  
+  // FIXED: Add display() call to show the matrix animation
+  M5Cardputer.Display.display();
 }

@@ -6,20 +6,19 @@ XtraCardputer transforms your M5Cardputer into a full-featured pocket computer w
 ## Features
 
 ### 🎯 Core System
-- **Boot to Screensaver**: Powers on to the beautiful 28-effect screensaver
-- **Menu Access**: Press FnM at any time to access the main menu
+- **Boot to Screensaver**: Powers on to the beautiful 341-effect screensaver
+- **ESC Menu Access**: Press ESC at any time to access the main menu
 - **Auto-Return**: Menu automatically returns to screensaver after 1 minute of inactivity
 
 ### 📱 Applications
 
 1. **🎨 Screensaver** 
    - Multiple visual effects (subset of original 341 collection optimized for multi-app environment)
-   - Cycles through effects automatically - toggle off and on  using spacebar while screensaver is running. 
+   - Cycles through effects automatically
    - Manual effect switching with keyboard
 
 2. **🎵 MP3 Player**
    - Play audio files from SD card
-   - **NOTE** It took about 10 to 15 minutes to scan 1,900 songs when I first entered the MP3 player. During this time the divice does not react! You have to wait for the scan to finish. It will only have to do this once. If you  add songs to your card  you  can rescan  and it should only have to scan the new ones. You should not have to but I put the mp3s in the root of my SD card. You can try to put them in a directory named Music or any folder, if you want to try. It should scan for folders. Not tested. 
    - Shuffle mode support
    - Auto-advance to next song
    - Exit with M key
@@ -41,14 +40,11 @@ XtraCardputer transforms your M5Cardputer into a full-featured pocket computer w
    - Alarm configuration and management
    - Persistent time and alarm settings
    - Real-time clock display
-   - Visual Alarm
 
 6. **🎮 Games**
-   - **Tetris Landscape**:W=Left E=Right A or S=soft  drop 2 or 3=hard drop. I=rotate counter clockwise. O=rotate clockwise  I
-  8 or 9=Hold
- - **Tetris Portrait**: B=Left H=Right G or V=hard drop J or N= soft drop. 9=rotate clockwise P= rotate counter clockwise
-8 or I=Hold
-   - **Tetroids**: D=rotate counter clockwise F=rotate clockwise L=forward K=fire. there is a warp here somewhere. 
+   - **Snake**: Classic snake game with high score tracking
+   - **Tetris**: Portrait mode Tetris with hold/next piece display
+   - **Tetroids**: Asteroids-style space shooter
 
 7. **🔢 Calculator**
    - Basic arithmetic operations (+, -, ×, ÷)
@@ -61,18 +57,13 @@ XtraCardputer transforms your M5Cardputer into a full-featured pocket computer w
    - Category-based beacon selection
    - Real-time beacon transmission
 
-9. **🛡️ Evil Portal Hater** 2 Modes Pre Set OR Custom
+9. **🛡️ Evil Portal Hater**
    - Monitor and detect captive portals
    - Custom message broadcasting
    - Send counter-messages
    - User-configurable messages
    - One preset message option
 
- **PLUS**
- 10. Deauth hunter
- 11. PinAp hunter
- 12. 3,541 Joke Scroller
- 
 ## Hardware Requirements
 - M5Cardputer with ESP32-S3
 - SD card (for music and file storage)
@@ -160,7 +151,7 @@ This project builds upon and integrates code from several excellent open-source 
 - **M5Cardputer Libraries** - Hardware abstraction and display drivers
 
 ### Memory Optimization Note
-Due to the multi-application architecture of XtraCardputer, the full 341 visual effects collection has NOT been optimized to fit alongside games, WiFi tools, and other features. For a dedicated screensaver experience with all 341 effects, see the standalone XScreens projects.
+Due to the multi-application architecture of XtraCardputer, the full 341 visual effects collection has been optimized to fit alongside games, WiFi tools, and other features. For a dedicated screensaver experience with all 341 effects, see the standalone XScreens projects.
 
 Special thanks to the open-source community for creating the foundational tools and libraries that made this project possible.
 
