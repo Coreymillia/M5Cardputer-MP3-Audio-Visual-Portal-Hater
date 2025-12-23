@@ -197,10 +197,10 @@ M5Burner uses **flash size as a validation parameter**, not just for actual flas
 ## 🚀 Getting Started
 
 ### **Method 1: M5Burner (Recommended)**
-1. Download `XtraCardputer-ULTIMATE-WITH-TOGGLE.bin` from releases
-2. Open M5Burner, select M5Cardputer device
-3. Upload the .bin file - Download button should appear
-4. Flash and enjoy the ultimate M5Cardputer experience!
+
+1. Open M5Burner, select M5Cardputer device
+2. Search XtraCardputer
+3. Flash and enjoy the ultimate M5Cardputer experience!
 
 ### **Method 2: PlatformIO Development**
 ```bash
@@ -241,9 +241,11 @@ This project represents months of intensive development:
 This project builds upon excellent open-source work:
 
 ### **Core Inspiration**
-- **Bruce** - Multi-tool firmware inspiring menu system
-- **Nemo** - WiFi security framework for portal features
+- **Bruce** - For creating the Matrix Portal and Portal hater and for testing
+- **Nemo** - For extracting the Deauth Hunter and PinAP hunter and for testing
 - **XScreensCYD** - Original 341 visual effects collection
+- Converted from the Xscreensaver project. We only got a few to work in this software very well.
+- ...And gave up while we were still ahead. By far my favorite is XJack. 
 
 ### **Specialized Components** 
 - **Open-Wifi-Scanner** - Enhanced scanning capabilities
@@ -264,5 +266,9 @@ Open source project - contributions welcome! See individual component licenses f
 **Made with ❤️ for the M5Stack Community**
 
 *This represents the culmination of extensive development work to create the ultimate M5Cardputer experience. From solving M5Burner compatibility to perfecting audio playback, every feature has been carefully crafted for maximum functionality and user experience.* 🚀
+
+**Final Notes**
+This project was a journey compiling some of my favorite M5Stack features with some of my own. It went better than usual. I feel like I can go further. 
+So if anyone enjoys this project. Keep a look out for updates. Maybe. Maybe not. 
 
 **Enjoy your ultimate pocket computer!** 🎯
